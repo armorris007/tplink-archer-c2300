@@ -4,7 +4,7 @@
 IN=$1
 [ $# -lt 2 ] && OUT=${IN%.*}.xml || OUT=$2
 
-OPENSSL=/usr/local/bin/openssl
+OPENSSL=/usr/bin/openssl
 
 [ ! -f $IN ] && echo File $IN does not exist && exit
 
@@ -18,7 +18,8 @@ TMP=$IN-tmp-dir
 mkdir -p $TMP
 
 # decode binary file downloaded from TP-Link firmware - Backup
-$OPENSSL aes-256-cbc -d $AES -in $IN | $OPENSSL zlib -d -out $TMP/mid.bin
+$OPENSSL aes-256-cbc -d $AES -in $IN | python -c "import zlib,sys;sys.stdout.write(zlib.decompress(sys.stdin.read()))" > $TMP/mid.bin
+return
 
 # first 16 bytes are MD5 of product
 FILE_MD5=`dd if=$TMP/mid.bin  bs=1 count=16 2>/dev/null |  hexdump -v -e '/1 "%02x"'`
@@ -30,7 +31,7 @@ echo "File MD5: ${FILE_MD5}, product MD5: ${OUR_MD5}"
 dd if=$TMP/mid.bin of=$TMP/orig.bin bs=1 skip=16 2>/dev/null
 
 # decrypt again to get xml file
-$OPENSSL aes-256-cbc -d $AES -in $TMP/orig.bin | $OPENSSL zlib -d -out $OUT
+$OPENSSL aes-256-cbc -d $AES -in $TMP/orig.bin | python -c "import zlib,sys;sys.stdout.write(zlib.decompress(sys.stdin.read()))" > $OUT
 
 echo XML file saved in $OUT
-rm -rf $TMP
+#rm -rf $TMP
